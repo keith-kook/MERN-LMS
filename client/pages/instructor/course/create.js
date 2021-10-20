@@ -34,8 +34,7 @@ const CourseCreate = () => {
     setUploadButtonText(file.name);
     setValues({ ...values, loading: true });
 
-    // resize
-
+    // upload image
     try {
       const formData = new FormData();
       formData.append('courseImage', file);

@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 
 // Create the product schema
 const imageSchema = mongoose.Schema({
-  key: {
+  Key: {
     type: String,
     required: true,
   },
-  image: {
+  Location: {
     type: String,
     default: '',
   },
-  dateCreated: {
+  DateCreated: {
     type: Date,
     default: Date.now,
   },

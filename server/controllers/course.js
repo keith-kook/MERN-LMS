@@ -5,6 +5,9 @@ import { unlink } from 'fs';
 import mongoose from 'mongoose';
 import Course from '../models/course';
 import slugify from 'slugify';
+import sharp from 'sharp';
+import { unlinkSync } from 'fs';
+import path from 'path';
 
 // const awsConfig = {
 //   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -16,15 +19,16 @@ import slugify from 'slugify';
 // const S3 = new AWS.S3(awsConfig);
 
 export const removeImage = async (req, res) => {
+  // console.log(req.body);
+  // return;
   try {
-    const { key, id } = req.body.image;
+    const { Key, id } = req.body.image;
 
-    const path = `public/uploads/course/${key}`;
-    console.log(id);
+    const path = `public/uploads/course/${Key}`;
+    //console.log(id);
     unlink(path, err => {
       if (err) {
         console.error(err);
-
         return res.status(404).json({ msg: 'Image cannot found' });
       }
 
@@ -64,6 +68,29 @@ export const removeImage = async (req, res) => {
 };
 
 export const uploadImage = async (req, res) => {
+  try {
+    const { filename: image } = req.file;
+    await sharp(req.file.path)
+      .resize(720, 500)
+      .jpeg({ quality: 100 })
+      .toFile(path.resolve(req.file.destination, 'course', image));
+    unlinkSync(req.file.path);
+    const fileName = req.file.filename;
+    const port = process.env.PORT == 8000 ? `:${process.env.PORT}` : '';
+    const basePath = `${req.protocol}://${req.hostname}${port}/public/uploads/course/`;
+
+    // save image data into db
+    const newImage = new Image({
+      Key: fileName,
+      Location: `${basePath}${fileName}`,
+    });
+    const data = await newImage.save();
+    return res.send(data);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Unable to upload image.');
+  }
+
   // console.log(req.body);
   // try {
   //   const { image } = req.body;
@@ -116,5 +143,16 @@ export const create = async (req, res) => {
   } catch (err) {
     console.log(err);
     return res.status(400).send('Course create failed. Try again.');
+  }
+};
+
+export const read = async (req, res) => {
+  try {
+    const course = await Course.findOne({ slug: req.params.slug })
+      .populate('instructor', '_id name')
+      .exec();
+    res.json(course);
+  } catch (err) {
+    console.log(err);
   }
 };

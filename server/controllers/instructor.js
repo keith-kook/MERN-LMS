@@ -2,6 +2,7 @@ import User from '../models/user';
 //import stripe from "stripe";
 import { v4 as uuidv4 } from 'uuid';
 //import queryString from 'query-string';
+import Course from '../models/course';
 
 export const makeInstructor = async (req, res) => {
   try {
@@ -69,6 +70,19 @@ export const currentInstructor = async (req, res) => {
     } else {
       res.json({ ok: true });
     }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export const instructorCourses = async (req, res) => {
+  try {
+    //console.log('InstructorCourses');
+    //return;
+    const courses = await Course.find({ instructor: req.user._id })
+      .sort({ createdAt: -1 })
+      .exec();
+    res.json(courses);
   } catch (err) {
     console.log(err);
   }
