@@ -1,6 +1,7 @@
 // import AWS from "aws-sdk";
 import { nanoid } from 'nanoid';
 import { Image } from '../models/image';
+import { Video } from '../models/video';
 import { unlink } from 'fs';
 import mongoose from 'mongoose';
 import Course from '../models/course';
@@ -69,6 +70,8 @@ export const removeImage = async (req, res) => {
 
 export const uploadImage = async (req, res) => {
   try {
+    if (!req.file) return res.status(400).send('No image');
+
     const { filename: image } = req.file;
     await sharp(req.file.path)
       .resize(720, 500)
@@ -124,6 +127,72 @@ export const uploadImage = async (req, res) => {
   // }
 };
 
+export const uploadVideo = async (req, res) => {
+  try {
+    //console.log(req.file);
+    //console.log('req.user._id', req.user._id);
+    //console.log(req.params.instructorId);
+
+    if (req.user._id != req.params.instructorId) {
+      res.status(400).send('Unauthorised Access');
+    }
+
+    if (!req.file) return res.status(400).send('No video');
+
+    const fileName = req.file.filename;
+    const port = process.env.PORT == 8000 ? `:${process.env.PORT}` : '';
+    const basePath = `${req.protocol}://${req.hostname}${port}/public/uploads/videos/`;
+
+    // save video data into db
+    const newVideo = new Video({
+      Key: fileName,
+      Location: `${basePath}${fileName}`,
+    });
+    const data = await newVideo.save();
+    return res.send(data);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Unable to upload video.');
+  }
+};
+
+export const removeVideo = async (req, res) => {
+  try {
+    if (req.user._id != req.params.instructorId) {
+      res.status(400).send('Unauthorised Access');
+    }
+    //const { Key } = req.body;
+    console.log('VIDEO REMOVE =====> ', req.body);
+    const { Key, id } = req.body;
+    console.log(Key);
+    const path = `public/uploads/videos/${Key}`;
+    //console.log(id);
+    unlink(path, err => {
+      if (err) {
+        console.error(err);
+        return res.status(404).json({ msg: 'Video cannot found' });
+      }
+
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ msg: 'Invalid video id' });
+      }
+
+      try {
+        Video.findByIdAndRemove(id).exec();
+        res.json({ msg: 'Video deleted' });
+      } catch (error) {
+        console.error(error.message);
+        if (error.kind === 'ObjectId') {
+          return res.status(404).json({ msg: 'Video not found' });
+        }
+        res.status(500).send('Server Error');
+      }
+    });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 export const create = async (req, res) => {
   //console.log('CREATE COURSE', req.body);
   //return;
@@ -154,5 +223,50 @@ export const read = async (req, res) => {
     res.json(course);
   } catch (err) {
     console.log(err);
+  }
+};
+export const addLesson = async (req, res) => {
+  try {
+    const { slug, instructorId } = req.params;
+    const { title, content, video } = req.body;
+
+    if (req.user._id != instructorId) {
+      return res.status(400).send('Unauthorized');
+    }
+
+    const updated = await Course.findOneAndUpdate(
+      { slug },
+      {
+        $push: { lessons: { title, content, video, slug: slugify(title) } },
+      },
+      { new: true }
+    )
+      .populate('instructor', '_id name')
+      .exec();
+    res.json(updated);
+  } catch (err) {
+    console.log(err);
+    return res.status(400).send('Add lesson failed');
+  }
+};
+
+export const update = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    // console.log(slug);
+    const course = await Course.findOne({ slug }).exec();
+    // console.log("COURSE FOUND => ", course);
+    if (req.user._id != course.instructor) {
+      return res.status(400).send('Unauthorized');
+    }
+
+    const updated = await Course.findOneAndUpdate({ slug }, req.body, {
+      new: true,
+    }).exec();
+
+    res.json(updated);
+  } catch (err) {
+    console.log(err);
+    return res.status(400).send(err.message);
   }
 };

@@ -1,0 +1,34 @@
+const mongoose = require('mongoose');
+
+// Create the product schema
+const videoSchema = mongoose.Schema({
+  Key: {
+    type: String,
+    required: true,
+  },
+  Location: {
+    type: String,
+    default: '',
+  },
+  DateCreated: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+// return a virtual id
+videoSchema.method('toJSON', function () {
+  const { __v, ...object } = this.toObject();
+  const { _id: id, ...result } = object;
+  return { ...result, id };
+});
+
+// export a model as OBJECT
+exports.Video = mongoose.model('Video', videoSchema);
+// Note: export single object likes above, it needs to import as object
+// const { Product } = require('../models/product');
+
+// export a model as MODULE
+// module.exports = mongoose.model('Product', productSchema);
+// Note: export as module, it needs to import as module without {}
+// const Product = require('../models/product');
