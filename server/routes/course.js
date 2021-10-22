@@ -15,6 +15,7 @@ import {
 import {
   uploadImage,
   removeImage,
+  courses,
   create,
   update,
   read,
@@ -24,8 +25,11 @@ import {
   addLesson,
   removeLesson,
   updateLesson,
+  publishCourse,
+  unpublishCourse,
 } from '../controllers/course';
 
+router.get('/courses', courses);
 // image
 router.post(
   '/course/upload-image',
@@ -36,6 +40,7 @@ router.post(
 router.post('/course/remove-image', requireSignin, removeImage);
 
 // course
+
 router.post('/course', requireSignin, isInstructor, create);
 router.put('/course/:slug', requireSignin, update);
 router.get('/course/:slug', read);
@@ -54,8 +59,15 @@ router.put(
   updateVideo
 );
 router.post('/course/lesson/:slug/:instructorId', requireSignin, addLesson);
+
+// publish course
+router.put('/course/publish/:courseId', requireSignin, publishCourse);
+// unpublish course
+router.put('/course/unpublish/:courseId', requireSignin, unpublishCourse);
+
 // update
 router.put('/course/lesson/:courseId/:lessonId', requireSignin, updateLesson);
 
-router.put('/course/:slug/:lessonId', requireSignin, removeLesson);
+router.put('/course/:courseId/:lessonId', requireSignin, removeLesson);
+
 module.exports = router;

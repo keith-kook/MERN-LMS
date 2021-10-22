@@ -39,7 +39,7 @@ const UpdateLessonForm = ({
                 url={current.video.Location}
                 width='410px'
                 height='240px'
-                controls
+                controls={true}
               />
             </div>
           )}
