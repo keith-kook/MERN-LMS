@@ -143,7 +143,7 @@ export const uploadVideo = async (req, res) => {
     const port = process.env.PORT == 8000 ? `:${process.env.PORT}` : '';
     const basePath = `${req.protocol}://${req.hostname}${port}/public/uploads/videos/`;
 
-    // save video data into db
+    //save video data into db
     const newVideo = new Video({
       Key: fileName,
       Location: `${basePath}${fileName}`,
@@ -156,13 +156,83 @@ export const uploadVideo = async (req, res) => {
   }
 };
 
+export const updateVideo = async (req, res) => {
+  try {
+    //console.log(`body`, req.body);
+    //console.log(req.file);
+    //console.log('req.user._id', req.user._id);
+
+    const { videoId } = req.params;
+    console.log(`CurrVideoID: ${videoId}`);
+    //console.log(`Body: ${req.body}`);
+
+    if (req.user._id != req.params.instructorId) {
+      res.status(400).send('Unauthorised Access');
+    }
+
+    if (!req.file) return res.status(400).send('No video');
+
+    const fileName = req.file.filename;
+    const port = process.env.PORT == 8000 ? `:${process.env.PORT}` : '';
+    const basePath = `${req.protocol}://${req.hostname}${port}/public/uploads/videos/`;
+
+    //save new video data into db
+    const newVideo = new Video({
+      Key: fileName,
+      Location: `${basePath}${fileName}`,
+    });
+    const data = await newVideo.save();
+    res.json(data);
+
+    // ToDo
+    // Update new video into lesson
+
+    // const updated = await Course.findByIdAndUpdate(
+    //   videoId,
+    //   {
+    //     $push: {
+    //       lessons: {
+    //         video: { Key: fileName, Location: `${basePath}${fileName}` },
+    //       },
+    //     },
+    //   },
+    //   { new: true }
+    // )
+    //   .populate('instructor', '_id name')
+    //   .exec();
+
+    //update video data into db
+    // console.log(slug);
+    //const course = await Video.findOne({ videoId }).exec();
+    // console.log("COURSE FOUND => ", course);
+    // console.log('NewFileName' + fileName);
+    // const updated = await Video.findByIdAndUpdate(
+    //   videoId,
+    //   {
+    //     $push: {
+    //       lessons: {
+    //         video: { Key: fileName, Location: `${basePath}${fileName}` },
+    //       },
+    //     },
+    //   },
+    //   {
+    //     new: true,
+    //   }
+    // ).exec();
+    // res.json(updated);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Unable to upload video.');
+  }
+};
+
 export const removeVideo = async (req, res) => {
   try {
     if (req.user._id != req.params.instructorId) {
       res.status(400).send('Unauthorised Access');
     }
     //const { Key } = req.body;
-    console.log('VIDEO REMOVE =====> ', req.body);
+    //console.log('VIDEO REMOVE =====> ', req.body);
     const { Key, id } = req.body;
     console.log(Key);
     const path = `public/uploads/videos/${Key}`;
@@ -268,5 +338,55 @@ export const update = async (req, res) => {
   } catch (err) {
     console.log(err);
     return res.status(400).send(err.message);
+  }
+};
+
+export const removeLesson = async (req, res) => {
+  const { slug, lessonId } = req.params;
+  const course = await Course.findOne({ slug }).exec();
+  if (req.user._id != course.instructor) {
+    return res.status(400).send('Unauthorized');
+  }
+
+  const deletedCourse = await Course.findByIdAndUpdate(course._id, {
+    $pull: { lessons: { _id: lessonId } },
+  }).exec();
+
+  res.json({ ok: true });
+};
+
+export const updateLesson = async (req, res) => {
+  //console.log(`updateLesson`, req.body);
+  try {
+    const { courseId, lessonId } = req.params;
+
+    // console.log('courseId', courseId);
+    // console.log('lessonId', lessonId);
+
+    const { title, content, video, free_preview } = req.body;
+    // find post
+    const courseFound = await Course.findById(courseId)
+      .select('instructor')
+      .exec();
+    // is owner?
+    if (req.user._id != courseFound.instructor._id) {
+      return res.status(400).send('Unauthorized');
+    }
+    const updated = await Course.updateOne(
+      { 'lessons._id': lessonId },
+      {
+        $set: {
+          'lessons.$.title': title,
+          'lessons.$.content': content,
+          'lessons.$.video': video,
+          'lessons.$.free_preview': free_preview,
+        },
+      }
+    ).exec();
+    console.log('updated => ', updated);
+    res.json({ ok: true });
+  } catch (err) {
+    console.log(err);
+    return res.status(400).send('Update lesson failed');
   }
 };
