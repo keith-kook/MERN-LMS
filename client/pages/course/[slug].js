@@ -78,29 +78,26 @@ const SingleCourse = ({ course }) => {
     setEnrolled(data);
   };
 
-  const handlePaidEnrollment = async e => {
-    e.preventDefault();
-
+  const handlePaidEnrollment = async () => {
+    // console.log("handle paid enrollment");
     try {
       setLoading(true);
-      if (!user) return router.push('/login');
-      // if user is already enrolled, redirect to course page
+      // check if user is logged in
+      if (!user) router.push('/login');
+      // check if already enrolled
       if (enrolled.status)
         return router.push(`/user/course/${enrolled.course.slug}`);
-      // console.log("enroll to this course > ", course._id);
       const { data } = await axios.post(`/api/paid-enrollment/${course._id}`);
-      // console.log("PAID ENROLLMENT => ", data);
-      // load stripe for payment
-      // on successful payment, user will get redirected to /stripe/success page
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY);
-      stripe.redirectToCheckout({ sessionId: data });
+      //const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY);
+      // stripe.redirectToCheckout({ sessionId: data });
+      console.log(data);
+      window.location.href = data;
     } catch (err) {
-      toast('Enrollment failed, Try again.');
-      // console.log(err);
+      toast('Enrollment failed, try again.');
+      console.log(err);
       setLoading(false);
     }
   };
-
   const handleFreeEnrollment = async e => {
     e.preventDefault();
 

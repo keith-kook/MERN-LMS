@@ -27,6 +27,11 @@ import {
   updateLesson,
   publishCourse,
   unpublishCourse,
+  checkEnrollment,
+  freeEnrollment,
+  paidEnrollment,
+  userCourses,
+  stripeSuccess,
 } from '../controllers/course';
 
 router.get('/courses', courses);
@@ -69,5 +74,11 @@ router.put('/course/unpublish/:courseId', requireSignin, unpublishCourse);
 router.put('/course/lesson/:courseId/:lessonId', requireSignin, updateLesson);
 
 router.put('/course/:courseId/:lessonId', requireSignin, removeLesson);
+
+router.get('/check-enrollment/:courseId', requireSignin, checkEnrollment);
+// enrollment
+router.post('/free-enrollment/:courseId', requireSignin, freeEnrollment);
+router.post('/paid-enrollment/:courseId', requireSignin, paidEnrollment);
+router.get('/stripe-success/:courseId', requireSignin, stripeSuccess);
 
 module.exports = router;
