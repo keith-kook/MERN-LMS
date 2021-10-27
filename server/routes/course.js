@@ -9,6 +9,7 @@ import {
   isInstructor,
   singleFileMulter,
   singleVideoMulter,
+  isEnrolled,
 } from '../middlewares';
 
 // controllers
@@ -32,6 +33,9 @@ import {
   paidEnrollment,
   userCourses,
   stripeSuccess,
+  markCompleted,
+  listCompleted,
+  markIncomplete,
 } from '../controllers/course';
 
 router.get('/courses', courses);
@@ -80,5 +84,13 @@ router.get('/check-enrollment/:courseId', requireSignin, checkEnrollment);
 router.post('/free-enrollment/:courseId', requireSignin, freeEnrollment);
 router.post('/paid-enrollment/:courseId', requireSignin, paidEnrollment);
 router.get('/stripe-success/:courseId', requireSignin, stripeSuccess);
+
+router.get('/user-courses', requireSignin, userCourses);
+router.get('/user/course/:slug', requireSignin, isEnrolled, read);
+
+// mark completed
+router.post('/mark-completed', requireSignin, markCompleted);
+router.post('/list-completed', requireSignin, listCompleted);
+router.post('/mark-incomplete', requireSignin, markIncomplete);
 
 module.exports = router;
